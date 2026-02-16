@@ -1,0 +1,10 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"include": [
+		"src/main.tsx",
+		"src/index.ts",
+		"src/sample/**/*.ts",
+		"src/project/**/*.ts",
+		"src/workers/**/*.ts"
+	]
+}

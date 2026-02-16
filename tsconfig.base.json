@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@opencad/core": ["packages/core/src"],
+      "@opencad/renderer": ["packages/renderer/src"],
+      "@opencad/schematic": ["packages/schematic/src"],
+      "@opencad/pcb": ["packages/pcb/src"],
+      "@opencad/library": ["packages/library/src"],
+      "@opencad/fileio": ["packages/fileio/src"],
+      "@opencad/viewer3d": ["packages/viewer3d/src"],
+      "@opencad/ui": ["packages/ui/src"],
+      "@opencad/app": ["packages/app/src"]
+    },
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "exclude": ["node_modules", "dist"]
+}
