@@ -44,3 +44,4 @@ export {
 } from './pcb-types';
 
 export { type DesignRules, defaultDesignRules } from './design-rules';
+export { normalizePCBDocument } from './pcb-normalization';

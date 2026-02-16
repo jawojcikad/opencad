@@ -1,5 +1,10 @@
-import { KiCadPCBParser, KiCadSchematicParser } from '../kicad/kicad-project-parser';
+import {
+  KiCadPCBParser,
+  KiCadSchematicParser,
+  LegacyKiCadSchematicParser,
+} from '../kicad/kicad-project-parser';
 import { EaglePCBParser, EagleSchematicParser } from '../eagle/eagle-xml-parser';
+import { EagleBinaryPCBParser, EagleBinarySchematicParser } from '../eagle/eagle-binary-parser';
 
 export interface DesignImportFile {
   name: string;
@@ -20,6 +25,13 @@ interface DesignFormatDriver {
   canHandle(file: DesignImportFile): boolean;
   parse(files: DesignImportFile[]): DesignImportResult;
 }
+
+const looksLikeLegacyEagleBinary = (content: string): boolean => {
+  if (!content || content.length < 4) return false;
+  const b0 = content.charCodeAt(0);
+  const b2 = content.charCodeAt(2);
+  return b0 === 0x10 && (b2 === 0x60 || b2 === 0x61 || b2 === 0x6a || b2 === 0x6d || b2 === 0x45);
+};
 
 class FormatRegistry {
   private drivers: DesignFormatDriver[] = [];
@@ -131,13 +143,21 @@ class KiCadAndJsonDriver implements DesignFormatDriver {
 
     if (schEntries.length > 0) {
       const parser = new KiCadSchematicParser();
+      const legacyParser = new LegacyKiCadSchematicParser();
       for (const entry of schEntries) {
         if (entry.binaryLike) {
           result.warnings.push(`Skipped binary schematic in KiCad driver: ${entry.name}`);
           continue;
         }
         try {
-          result.schematicDocument = parser.parse(entry.content);
+          const trimmed = entry.content.trimStart();
+          if (trimmed.includes('(kicad_sch')) {
+            result.schematicDocument = parser.parse(entry.content);
+          } else if (trimmed.startsWith('EESchema Schematic File Version')) {
+            result.schematicDocument = legacyParser.parse(entry.content);
+          } else {
+            continue;
+          }
           if (!result.projectName) {
             result.projectName = getBaseName(entry.name);
           }
@@ -212,6 +232,7 @@ class UnsupportedBinaryDriver implements DesignFormatDriver {
   canHandle(file: DesignImportFile): boolean {
     const extension = getExtension(file.name);
     return file.binaryLike
+      && !looksLikeLegacyEagleBinary(file.content)
       && (extension === '.brd' || extension === '.pcb' || extension === '.sch' || extension === '.schm');
   }
 
@@ -291,10 +312,83 @@ class EagleXMLDriver implements DesignFormatDriver {
   }
 }
 
+/**
+ * Experimental legacy Eagle binary support.
+ *
+ * This parser provides an approximate import by extracting probable design
+ * tokens from binary payloads. It intentionally emits warnings so users know
+ * the result is non-authoritative until a full binary decoder is implemented.
+ */
+class EagleBinaryApproxDriver implements DesignFormatDriver {
+  id = 'eagle-binary-approx';
+  priority = 50;
+
+  canHandle(file: DesignImportFile): boolean {
+    const extension = getExtension(file.name);
+    if (!file.binaryLike) return false;
+    if (extension !== '.brd' && extension !== '.pcb' && extension !== '.sch' && extension !== '.schm') return false;
+    return looksLikeLegacyEagleBinary(file.content);
+  }
+
+  parse(files: DesignImportFile[]): DesignImportResult {
+    const result: DesignImportResult = { warnings: [] };
+
+    const schEntries = files.filter((f) => {
+      const ext = getExtension(f.name);
+      return ext === '.sch' || ext === '.schm';
+    });
+    const brdEntries = files.filter((f) => {
+      const ext = getExtension(f.name);
+      return ext === '.brd' || ext === '.pcb';
+    });
+
+    if (schEntries.length > 0 && !result.schematicDocument) {
+      const parser = new EagleBinarySchematicParser();
+      for (const entry of schEntries) {
+        try {
+          result.schematicDocument = parser.parse(entry.content, getBaseName(entry.name));
+          if (!result.projectName) {
+            result.projectName = getBaseName(entry.name);
+          }
+          result.warnings.push(
+            `Loaded legacy binary Eagle schematic "${entry.name}" using approximate token extraction. ` +
+            'Geometry/connectivity can be incomplete; verify against the original design.',
+          );
+          break;
+        } catch (error) {
+          result.warnings.push(`Legacy Eagle binary schematic parse failed for ${entry.name}: ${(error as Error).message}`);
+        }
+      }
+    }
+
+    if (brdEntries.length > 0 && !result.pcbDocument) {
+      const parser = new EagleBinaryPCBParser();
+      for (const entry of brdEntries) {
+        try {
+          result.pcbDocument = parser.parse(entry.content, getBaseName(entry.name));
+          if (!result.projectName) {
+            result.projectName = getBaseName(entry.name);
+          }
+          result.warnings.push(
+            `Loaded legacy binary Eagle board "${entry.name}" using approximate token extraction. ` +
+            'Board geometry/routing can be incomplete; verify against the original design.',
+          );
+          break;
+        } catch (error) {
+          result.warnings.push(`Legacy Eagle binary PCB parse failed for ${entry.name}: ${(error as Error).message}`);
+        }
+      }
+    }
+
+    return result;
+  }
+}
+
 export function parseDesignFiles(files: DesignImportFile[]): DesignImportResult {
   const registry = new FormatRegistry();
   registry.register(new KiCadAndJsonDriver());
   registry.register(new EagleXMLDriver());
+  registry.register(new EagleBinaryApproxDriver());
   registry.register(new UnsupportedBinaryDriver());
   return registry.parse(files);
 }

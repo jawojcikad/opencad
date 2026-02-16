@@ -32,15 +32,16 @@ export const LayerPanel: React.FC = () => {
   const { theme } = useTheme();
   const activeLayer = useAppStore((s) => s.activeLayer);
   const setActiveLayer = useAppStore((s) => s.setActiveLayer);
+  const pcbLayerVisibility = useAppStore((s) => s.pcbLayerVisibility);
+  const setPCBLayerVisibility = useAppStore((s) => s.setPCBLayerVisibility);
 
   const [layers, setLayers] = useState<PCBLayer[]>(DEFAULT_LAYERS);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
-  const toggleVisibility = useCallback((id: string) => {
-    setLayers((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l))
-    );
-  }, []);
+  const toggleVisibility = useCallback((layerName: string) => {
+    const current = pcbLayerVisibility[layerName] ?? true;
+    setPCBLayerVisibility(layerName, !current);
+  }, [pcbLayerVisibility, setPCBLayerVisibility]);
 
   const handleDragStart = useCallback((index: number) => {
     setDragIndex(index);
@@ -94,6 +95,7 @@ export const LayerPanel: React.FC = () => {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {layers.map((layer, index) => {
           const isActive = layer.name === activeLayer;
+          const isVisible = pcbLayerVisibility[layer.name] ?? layer.visible;
           return (
             <div
               key={layer.id}
@@ -144,9 +146,9 @@ export const LayerPanel: React.FC = () => {
                 style={{
                   flex: 1,
                   fontSize: 12,
-                  color: layer.visible ? theme.colors.text : theme.colors.textSecondary,
+                  color: isVisible ? theme.colors.text : theme.colors.textSecondary,
                   fontWeight: isActive ? 600 : 400,
-                  textDecoration: layer.visible ? 'none' : 'line-through',
+                  textDecoration: isVisible ? 'none' : 'line-through',
                   fontFamily: theme.fonts.mono,
                 }}
               >
@@ -157,7 +159,7 @@ export const LayerPanel: React.FC = () => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleVisibility(layer.id);
+                  toggleVisibility(layer.name);
                 }}
                 style={{
                   background: 'none',
@@ -169,9 +171,9 @@ export const LayerPanel: React.FC = () => {
                 }}
               >
                 <Icon
-                  name={layer.visible ? 'eye' : 'eye-off'}
+                  name={isVisible ? 'eye' : 'eye-off'}
                   size={14}
-                  color={layer.visible ? theme.colors.text : theme.colors.textSecondary}
+                  color={isVisible ? theme.colors.text : theme.colors.textSecondary}
                 />
               </button>
             </div>

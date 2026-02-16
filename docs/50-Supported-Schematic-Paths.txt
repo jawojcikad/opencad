@@ -1,0 +1,60 @@
+Test data/A10-OLinuXino-LIME/2. Older hardware revisions/A10-OLinuXino-LIME hardware revision A/A10-OLinuXino-Lime_Rev_A.sch
+Test data/A10-OLinuXino-LIME/2. Older hardware revisions/A10-OLinuXino-LIME hardware revision B/A10-OLinuXino-Lime_Rev_B.sch
+Test data/A10-OLinuXino-LIME/3. Templates and more/A10-OLinuXino-LIME revision B SHIELD TEMPLATE EAGLE/A10-OLinuXino-Lime_Rev-B_SHIELD_TEMPLATE.sch
+Test data/A10-OLinuXino-LIME/3. Templates and more/A10-OLinuXino-LIME revision B SHIELD TEMPLATE KiCAD/A10_OLinuXino_Lime_Rev-B_SHIELD_TEMPLATE.sch
+Test data/A10-OLinuXino-MICRO/A10-OLinuXino-MICRO hardware revision C/A10-A20-OLINUXINO-MICRO-4GB_Rev_C.sch
+Test data/A10-OLinuXino-MICRO/A10-OLinuXino-MICRO hardware revision D/A10-A20-OLINUXINO-MICRO-4GB_Rev_D.sch
+Test data/A10-OLinuXino-MICRO/A10-OLinuXino-MICRO hardware revision E/A20-OLINUXINO-MICRO_4GB_REV_E2.sch
+Test data/A20-OLinuXino-LIME2/3. Templates and more/A20-OLinuXino-LIME2-rev-A SHIELD TEMPLATE KiCAD/A20_OLinuXino_Lime2_SHIELD_TEMPLATE_Rev-AA.sch
+Test data/A64-OLinuXino/1. Latest hardware revision/A64-OLinuXino hardware revision H/A64-OlinuXino_Rev_H.sch
+Test data/A64-OLinuXino/1. Latest hardware revision/A64-OLinuXino hardware revision H/NAND Flash , eMMC, T-Card and Audio.sch
+Test data/A64-OLinuXino/1. Latest hardware revision/A64-OLinuXino hardware revision H/Power Supply, Extensions and MiPi-DSI .sch
+Test data/A64-OLinuXino/1. Latest hardware revision/A64-OLinuXino hardware revision H/USB&HDMI,WiFi&BT,Ethernet,LCD.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision A/A64-OlinuXino_Rev_A.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision A/NAND Flash , eMMC, T-Card and Audio.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision A/Power Supply, Extensions and MiPi-DSI .sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision A/USB&HDMI,WiFi&BT,Ethernet,LCD.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision B/A64-OlinuXino_Rev_B.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision B/NAND Flash , eMMC, T-Card and Audio.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision B/Power Supply, Extensions and MiPi-DSI .sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision B/USB&HDMI,WiFi&BT,Ethernet,LCD.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision C/A64-OlinuXino_Rev_C.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision C/NAND Flash , eMMC, T-Card and Audio.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision C/Power Supply, Extensions and MiPi-DSI .sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision C/USB&HDMI,WiFi&BT,Ethernet,LCD.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision D/A64-OlinuXino_Rev_D.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision D/NAND Flash , eMMC, T-Card and Audio.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision D/Power Supply, Extensions and MiPi-DSI .sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision D/USB&HDMI,WiFi&BT,Ethernet,LCD.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision E/A64-OlinuXino_Rev_E.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision E/NAND Flash , eMMC, T-Card and Audio.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision E/Power Supply, Extensions and MiPi-DSI .sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision E/USB&HDMI,WiFi&BT,Ethernet,LCD.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision G1/A64-OlinuXino_Rev_G1.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision G1/NAND Flash , eMMC, T-Card and Audio.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision G1/Power Supply, Extensions and MiPi-DSI .sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision G1/USB&HDMI,WiFi&BT,Ethernet,LCD.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision G/A64-OlinuXino_Rev_G.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision G/NAND Flash , eMMC, T-Card and Audio.sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision G/Power Supply, Extensions and MiPi-DSI .sch
+Test data/A64-OLinuXino/2. Older hardware revisions/A64-OLinuXino hardware revision G/USB&HDMI,WiFi&BT,Ethernet,LCD.sch
+Test data/AM3352-OLinuXino/AM3352-OLINUXINO_Rev_A-14122012.sch
+Test data/iMX233-OLinuXino-Maxi/1. Latest hardware revision/iMX233-OLinuXino-MAXI hardware revision D/iMX233-OLINUXINO-MAXI_Rev_D.sch
+Test data/iMX233-OLinuXino-Maxi/2. Older hardware revisions/iMX233-OLinuXino-MAXI hardware revision D/iMX233-OLINUXINO-MAXI_Rev_D.sch
+Test data/iMX233-OLinuXino-Micro/2. Older hardware revisions/iMX233-OLinuXino-MICRO hardware revision C/iMX233-OLinuXino-Micro_Rev_C.sch
+Test data/iMX233-OLinuXino-Micro/2. Older hardware revisions/iMX233-OLinuXino-MICRO hardware revision D/iMX233-OLinuXino-Micro_Rev_D.sch
+Test data/LCDs/A13-LCD10TS/A13-LCD10TS_Rev_A.sch
+Test data/LCDs/LCD-DRIVER/Hardware revision B/LCD-DRIVER_Rev_B.sch
+Test data/LCDs/LCD-DRIVER/Hardware revision C/LCD-DRIVER_Rev_C.sch
+Test data/LCDs/LCD-DRIVER/Hardware revision D/LCD-DRIVER_Rev_D.sch
+Test data/LCDs/LCD-OLinuXino-15.6FHD/Hardware revision H/LCD-OLinuXino-15.6FHD_Rev_H.sch
+Test data/LCDs/LCD-OLinuXino-4.3TS/Hardware revision A/LCD-OLINUXINO-4.3TS_Rev_A.sch
+Test data/LCDs/LCD-OLinuXino-5CTS/Hardware revision A/LCD-OLinuXino-5TS.sch
+Test data/LCDs/LCD-OLinuXino-5CTS/Hardware revision B/LCD-OLinuXino-5TS_Rev.B.sch
+Test data/LCDs/LCD-OLinuXino-7TS/Hardware revision A/LCD-OLINUXINO-7TS_Rev_A.sch
+Test data/Lime2-SATA/Lime2-SATA_RevA/Lime2-SATA_RevA.sch
+Test data/STMP157-OLinuXino-LIME2/1. Latest hardware revision/STMP157-OLinuXino-LIME2_Rev_B1/eMMC, SPI-Flash, T-Card and Boot.sch
+Test data/STMP157-OLinuXino-LIME2/1. Latest hardware revision/STMP157-OLinuXino-LIME2_Rev_B1/HDMI, LCD  and Ethernet.sch
+Test data/STMP157-OLinuXino-LIME2/1. Latest hardware revision/STMP157-OLinuXino-LIME2_Rev_B1/Power Supply.sch
+Test data/STMP157-OLinuXino-LIME2/1. Latest hardware revision/STMP157-OLinuXino-LIME2_Rev_B1/STMP157-OLinuXino-LIME2_Rev_B1.sch
+Test data/STMP157-OLinuXino-LIME2/1. Latest hardware revision/STMP157-OLinuXino-LIME2_Rev_B1/USB, CAN and Extensions.sch

@@ -11,6 +11,7 @@ export const PCBCanvas: React.FC = () => {
 
   const activeTool = useAppStore((s) => s.activeTool);
   const activeLayer = useAppStore((s) => s.activeLayer);
+  const layerVisibility = useAppStore((s) => s.pcbLayerVisibility);
   const pcbDocument = useAppStore((s) => s.pcbDocument);
 
   // Initialize editor
@@ -19,6 +20,9 @@ export const PCBCanvas: React.FC = () => {
     if (!canvas) return;
 
     const editor = new PCBEditor(canvas);
+    for (const [layerName, visible] of Object.entries(useAppStore.getState().pcbLayerVisibility)) {
+      editor.setLayerVisibility(layerName as any, visible);
+    }
     editorRef.current = editor;
     editor.startRenderLoop();
 
@@ -68,6 +72,13 @@ export const PCBCanvas: React.FC = () => {
       editorRef.current.setActiveLayer(activeLayer as any);
     }
   }, [activeLayer]);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+    for (const [layerName, visible] of Object.entries(layerVisibility)) {
+      editorRef.current.setLayerVisibility(layerName as any, visible);
+    }
+  }, [layerVisibility]);
 
   const cursorMap: Record<string, string> = {
     select: 'default',

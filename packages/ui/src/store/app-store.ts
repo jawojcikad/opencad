@@ -21,6 +21,8 @@ interface AppState {
   // Active layer (PCB mode)
   activeLayer: string;
   setActiveLayer: (layer: string) => void;
+  pcbLayerVisibility: Record<string, boolean>;
+  setPCBLayerVisibility: (layer: string, visible: boolean) => void;
 
   // Tool
   activeTool: string;
@@ -74,6 +76,30 @@ export const useAppStore = create<AppState>((set) => ({
   // Active layer
   activeLayer: 'F.Cu',
   setActiveLayer: (activeLayer) => set({ activeLayer }),
+  pcbLayerVisibility: {
+    'F.Cu': true,
+    'B.Cu': true,
+    'F.SilkS': true,
+    'B.SilkS': true,
+    'F.Mask': true,
+    'B.Mask': true,
+    'F.Paste': false,
+    'B.Paste': false,
+    'F.CrtYd': true,
+    'B.CrtYd': false,
+    'Edge.Cuts': true,
+    'Dwgs.User': true,
+    'Cmts.User': false,
+    'In1.Cu': false,
+    'In2.Cu': false,
+  },
+  setPCBLayerVisibility: (layer, visible) =>
+    set((state) => ({
+      pcbLayerVisibility: {
+        ...state.pcbLayerVisibility,
+        [layer]: visible,
+      },
+    })),
 
   // Tool
   activeTool: 'select',

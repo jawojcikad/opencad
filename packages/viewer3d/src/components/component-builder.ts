@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Footprint, Vector2D } from '@opencad/core';
+import { Footprint, Layer, Vector2D } from '@opencad/core';
 
 // Default dimensions (mm)
 const DEFAULT_COMPONENT_HEIGHT = 1.5;
@@ -475,14 +475,15 @@ export class ComponentBuilder {
   // ---------------------------------------------------------------------------
 
   autoGenerateComponent(footprint: Footprint): THREE.Group {
-    const name = (footprint.reference ?? '' + footprint.value ?? '').toUpperCase();
+    const name = `${footprint.reference ?? ''} ${footprint.value ?? ''}`.toUpperCase();
     const fpName = (footprint.footprintName ?? '').toUpperCase();
     const combined = name + ' ' + fpName;
 
     const position = footprint.position ?? { x: 0, y: 0 };
     const rotation = footprint.rotation ?? 0;
+    const layerName = String(footprint.layer ?? '');
     const side: 'top' | 'bottom' =
-      footprint.layer === 'B.Cu' || footprint.layer === 'bottom' ? 'bottom' : 'top';
+      layerName === Layer.BCu || layerName.toLowerCase() === 'bottom' ? 'bottom' : 'top';
 
     // Try to match known patterns
     if (/\b(0402|0603|0805|1206|1210|0201)\b/.test(combined)) {
