@@ -1,4 +1,4 @@
-import { Sheet, SchematicComponent, Wire, NetLabel, PowerPort, Junction } from '@opencad/core';
+import { Sheet, SchematicComponent, Wire, NetLabel, PowerPort, Junction, Vector2D, BBox } from '@opencad/core';
 import { Canvas2DRenderer } from '@opencad/renderer';
 
 import { SymbolRenderer } from './symbol-renderer';
@@ -30,6 +30,8 @@ export class SchematicRenderer {
     sheet: Sheet,
     selection: Set<string>
   ): void {
+    this.renderContrastOverlay(renderer, sheet);
+
     // 1. Wires
     const wires: Wire[] = sheet.wires ?? [];
     for (const wire of wires) {
@@ -75,6 +77,50 @@ export class SchematicRenderer {
     for (const junction of junctions) {
       this.wireRenderer.renderJunction(renderer, junction);
     }
+  }
+
+  private renderContrastOverlay(renderer: Canvas2DRenderer, sheet: Sheet): void {
+    const points: Vector2D[] = [];
+
+    for (const wire of sheet.wires ?? []) {
+      for (const p of wire.points ?? []) {
+        points.push(p);
+      }
+    }
+
+    for (const comp of sheet.components ?? []) {
+      points.push(comp.position);
+    }
+
+    for (const label of sheet.netLabels ?? []) {
+      points.push(label.position);
+    }
+
+    for (const port of sheet.powerPorts ?? []) {
+      points.push(port.position);
+    }
+
+    for (const junction of sheet.junctions ?? []) {
+      points.push(junction.position);
+    }
+
+    if (points.length === 0) return;
+
+    const bounds = BBox.fromPoints(points);
+    const margin = 24;
+    const x = bounds.minX - margin;
+    const y = bounds.minY - margin;
+    const width = bounds.width + margin * 2;
+    const height = bounds.height + margin * 2;
+
+    const g = renderer.getContext();
+    g.save();
+    g.fillStyle = 'rgba(8, 14, 24, 0.55)';
+    g.strokeStyle = 'rgba(120, 160, 210, 0.30)';
+    g.lineWidth = 1 / renderer.getCamera().zoom;
+    g.fillRect(x, y, width, height);
+    g.strokeRect(x, y, width, height);
+    g.restore();
   }
 
   /**

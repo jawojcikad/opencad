@@ -1,4 +1,5 @@
 import { parseDesignFiles } from '@opencad/fileio';
+import { normalizePCBDocument } from '@opencad/core';
 import { useAppStore } from '../store/app-store';
 
 export type ImportResult = {
@@ -81,7 +82,9 @@ export async function importFiles(files: File[]): Promise<ImportResult> {
 
   result.projectName = parsed.projectName;
   result.schematicDocument = parsed.schematicDocument;
-  result.pcbDocument = parsed.pcbDocument;
+  result.pcbDocument = parsed.pcbDocument
+    ? normalizePCBDocument(parsed.pcbDocument)
+    : undefined;
 
   if (result.pcbDocument) {
     result.preferredMode = 'pcb';

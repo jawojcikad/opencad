@@ -34,13 +34,11 @@ export class BoardBuilder {
   buildFullPCB(document: PCBDocument): THREE.Group {
     const group = new THREE.Group();
     group.name = 'pcb-assembly';
-    const doc = document as any;
-
-    const outline = doc.boardOutline;
-    if (!outline) return group;
+    const outlinePoints = this.resolveOutlinePoints(document);
+    if (outlinePoints.length < 3) return group;
 
     // 1. Board substrate
-    const boardMesh = this.buildBoardMesh(outline, BOARD_THICKNESS);
+    const boardMesh = this.buildBoardMeshFromPoints(outlinePoints, BOARD_THICKNESS);
     group.add(boardMesh);
 
     // 2. Bottom copper
@@ -54,11 +52,11 @@ export class BoardBuilder {
     group.add(topCopper);
 
     // 4. Solder masks
-    const bottomMask = this.buildSolderMask(document, Layer.BMask, Z_BOTTOM_MASK);
+    const bottomMask = this.buildSolderMaskWithOutline(document, Layer.BMask, Z_BOTTOM_MASK, outlinePoints);
     bottomMask.name = 'layer-bottom-mask';
     group.add(bottomMask);
 
-    const topMask = this.buildSolderMask(document, Layer.FMask, Z_TOP_MASK);
+    const topMask = this.buildSolderMaskWithOutline(document, Layer.FMask, Z_TOP_MASK, outlinePoints);
     topMask.name = 'layer-top-mask';
     group.add(topMask);
 
@@ -79,13 +77,13 @@ export class BoardBuilder {
   // ---------------------------------------------------------------------------
 
   buildBoardMesh(outline: BoardOutline, thickness: number): THREE.Mesh {
-    const points = (outline as any).points ?? outline.polygon ?? [];
+    const points = outline.points ?? outline.polygon ?? [];
+    return this.buildBoardMeshFromPoints(points, thickness);
+  }
+
+  private buildBoardMeshFromPoints(points: Vector2D[], thickness: number): THREE.Mesh {
     if (!points || points.length < 3) {
-      // Fallback to a simple box
-      const geo = new THREE.BoxGeometry(100, thickness, 100);
-      const mesh = new THREE.Mesh(geo, this.boardMaterial());
-      mesh.name = 'board-substrate';
-      return mesh;
+      return new THREE.Mesh(new THREE.BufferGeometry(), this.boardMaterial());
     }
 
     const shape = new THREE.Shape();
@@ -116,11 +114,10 @@ export class BoardBuilder {
   buildCopperLayer(document: PCBDocument, layer: Layer, zPosition: number): THREE.Group {
     const group = new THREE.Group();
     const mat = this.copperMaterial();
-    const doc = document as any;
 
     // Tracks
-    if (doc.tracks) {
-      for (const track of doc.tracks) {
+    if (document.tracks) {
+      for (const track of document.tracks) {
         if (track.layer === layer) {
           const mesh = this.createTrackMesh(track, zPosition);
           mesh.material = mat;
@@ -130,8 +127,8 @@ export class BoardBuilder {
     }
 
     // Footprints → pads on this layer
-    if (doc.footprints) {
-      for (const fp of doc.footprints) {
+    if (document.footprints) {
+      for (const fp of document.footprints) {
         if (fp.pads) {
           for (const pad of fp.pads) {
             if (pad.layer === layer || pad.layers?.includes(layer)) {
@@ -150,15 +147,15 @@ export class BoardBuilder {
     }
 
     // Vias span multiple layers — always render them
-    if (doc.vias) {
-      for (const via of doc.vias) {
+    if (document.vias) {
+      for (const via of document.vias) {
         const mesh = this.createViaMesh(via);
         group.add(mesh);
       }
     }
 
     // Copper zones
-    const zones = doc.copperZones ?? doc.zones ?? [];
+    const zones = document.copperZones ?? document.zones ?? [];
     for (const zone of zones) {
       if (zone.layer === layer) {
         const zonePolygon = zone.filledPolygon ?? zone.polygon ?? zone.outline ?? [];
@@ -178,10 +175,16 @@ export class BoardBuilder {
   // ---------------------------------------------------------------------------
 
   buildSolderMask(document: PCBDocument, layer: Layer, zPosition: number): THREE.Mesh {
-    const doc = document as any;
-    const outline = doc.boardOutline;
-    const outlinePoints = outline?.points ?? outline?.polygon ?? [];
-    if (!outline || outlinePoints.length < 3) {
+    return this.buildSolderMaskWithOutline(document, layer, zPosition, this.resolveOutlinePoints(document));
+  }
+
+  private buildSolderMaskWithOutline(
+    document: PCBDocument,
+    layer: Layer,
+    zPosition: number,
+    outlinePoints: Vector2D[],
+  ): THREE.Mesh {
+    if (!outlinePoints || outlinePoints.length < 3) {
       return new THREE.Mesh(new THREE.BufferGeometry(), this.solderMaskMaterial());
     }
 
@@ -194,8 +197,8 @@ export class BoardBuilder {
     shape.closePath();
 
     // Cut holes for exposed pads (pads that should not be covered by mask)
-    if (doc.footprints) {
-      for (const fp of doc.footprints) {
+    if (document.footprints) {
+      for (const fp of document.footprints) {
         if (!fp.pads) continue;
         for (const pad of fp.pads) {
           const onThisLayer =
@@ -242,6 +245,73 @@ export class BoardBuilder {
     return mesh;
   }
 
+  private resolveOutlinePoints(document: PCBDocument): Vector2D[] {
+    const explicit = document.boardOutline?.points ?? document.boardOutline?.polygon ?? [];
+    if (explicit.length >= 3) {
+      return explicit;
+    }
+
+    const points: Vector2D[] = [];
+
+    for (const track of document.tracks ?? []) {
+      points.push(track.start, track.end);
+    }
+
+    for (const via of document.vias ?? []) {
+      const radius = (via.diameter ?? via.size ?? 0.8) / 2;
+      points.push(
+        new Vector2D(via.position.x - radius, via.position.y - radius),
+        new Vector2D(via.position.x + radius, via.position.y + radius),
+      );
+    }
+
+    for (const fp of document.footprints ?? []) {
+      points.push(fp.position);
+      for (const pad of fp.pads ?? []) {
+        const pos = this.transformPadPosition(pad, fp.position, fp.rotation ?? 0);
+        const halfW = (pad.width ?? pad.size?.x ?? 1) / 2;
+        const halfH = (pad.height ?? pad.size?.y ?? 1) / 2;
+        points.push(
+          new Vector2D(pos.x - halfW, pos.y - halfH),
+          new Vector2D(pos.x + halfW, pos.y + halfH),
+        );
+      }
+    }
+
+    const zones = document.copperZones ?? document.zones ?? [];
+    for (const zone of zones) {
+      for (const p of zone.filledPolygon ?? zone.polygon ?? zone.outline ?? []) {
+        points.push(p);
+      }
+    }
+
+    if (points.length < 2) return [];
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const p of points) {
+      minX = Math.min(minX, p.x);
+      minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x);
+      maxY = Math.max(maxY, p.y);
+    }
+
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+      return [];
+    }
+
+    const margin = 1.0;
+    return [
+      new Vector2D(minX - margin, minY - margin),
+      new Vector2D(maxX + margin, minY - margin),
+      new Vector2D(maxX + margin, maxY + margin),
+      new Vector2D(minX - margin, maxY + margin),
+    ];
+  }
+
   // ---------------------------------------------------------------------------
   // Silkscreen
   // ---------------------------------------------------------------------------
@@ -249,13 +319,12 @@ export class BoardBuilder {
   buildSilkscreen(document: PCBDocument, layer: Layer, zPosition: number): THREE.Group {
     const group = new THREE.Group();
     const mat = this.silkscreenMaterial();
-    const doc = document as any;
 
     // Render reference designators as flat planes (real text rendering would
     // require font geometry which is out of scope; we represent them as small
     // rectangles with silkscreen material).
-    if (doc.footprints) {
-      for (const fp of doc.footprints) {
+    if (document.footprints) {
+      for (const fp of document.footprints) {
         const fpLayer =
           layer === Layer.FSilk ? Layer.FCu :
           layer === Layer.BSilk ? Layer.BCu :
@@ -368,8 +437,8 @@ export class BoardBuilder {
     footprintRot: number,
     z: number,
   ): THREE.Mesh {
-    const padW = (pad as any).width ?? (pad as any).size?.x ?? 1;
-    const padH = (pad as any).height ?? (pad as any).size?.y ?? padW;
+    const padW = pad.width ?? pad.size?.x ?? 1;
+    const padH = pad.height ?? pad.size?.y ?? padW;
     let geometry: THREE.BufferGeometry;
 
     switch (pad.shape) {
@@ -423,8 +492,8 @@ export class BoardBuilder {
   // ---------------------------------------------------------------------------
 
   createViaMesh(via: Via): THREE.Mesh {
-    const outerRadius = (via.diameter ?? (via as any).size ?? 0.8) / 2;
-    const innerRadius = ((via as any).drillDiameter ?? via.drill ?? 0.4) / 2;
+    const outerRadius = (via.diameter ?? via.size ?? 0.8) / 2;
+    const innerRadius = (via.drillDiameter ?? via.drill ?? 0.4) / 2;
 
     // Create a tube from bottom copper to top copper
     const height = BOARD_THICKNESS;
@@ -523,10 +592,10 @@ export class BoardBuilder {
     const rotRad = (fpRotDeg * Math.PI) / 180;
     const cosR = Math.cos(rotRad);
     const sinR = Math.sin(rotRad);
-    return {
-      x: fpPos.x + padLocal.x * cosR - padLocal.y * sinR,
-      y: fpPos.y + padLocal.x * sinR + padLocal.y * cosR,
-    } as any;
+    return new Vector2D(
+      fpPos.x + padLocal.x * cosR - padLocal.y * sinR,
+      fpPos.y + padLocal.x * sinR + padLocal.y * cosR,
+    );
   }
 
   // ---------------------------------------------------------------------------

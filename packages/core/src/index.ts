@@ -76,6 +76,7 @@ export {
   type PCBDocument,
   type DesignRules,
   defaultDesignRules,
+  normalizePCBDocument,
 } from './model';
 
 // ── Events ───────────────────────────────────────────────

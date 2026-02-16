@@ -335,6 +335,187 @@ export class KiCadSchematicParser {
     }
 }
 /* ================================================================== */
+/*  Legacy KiCad Schematic Parser (.sch, EESchema V2/V4 text)         */
+/* ================================================================== */
+export class LegacyKiCadSchematicParser {
+    parse(content) {
+        const lines = content.split(/\r?\n/);
+        if (!lines[0]?.startsWith('EESchema Schematic File Version')) {
+            throw new Error('Not a legacy KiCad schematic file');
+        }
+        const components = [];
+        const wires = [];
+        const labels = [];
+        let title = 'Untitled';
+        let sheetWidth = 297;
+        let sheetHeight = 210;
+        for (let index = 0; index < lines.length; index++) {
+            const line = lines[index]?.trim();
+            if (!line)
+                continue;
+            if (line.startsWith('$Descr')) {
+                const parts = line.split(/\s+/);
+                if (parts.length >= 4) {
+                    sheetWidth = Number(parts[2]) || sheetWidth;
+                    sheetHeight = Number(parts[3]) || sheetHeight;
+                }
+                continue;
+            }
+            if (line.startsWith('Title ')) {
+                const parsedTitle = this.extractQuoted(line);
+                if (parsedTitle)
+                    title = parsedTitle;
+                continue;
+            }
+            if (line === 'Wire Wire Line') {
+                const coordsLine = lines[index + 1]?.trim() ?? '';
+                const coords = this.parseCoords(coordsLine, 4);
+                if (coords) {
+                    wires.push({
+                        id: `wire_${index}`,
+                        points: [
+                            new Vector2D(coords[0], coords[1]),
+                            new Vector2D(coords[2], coords[3]),
+                        ],
+                    });
+                }
+                index += 1;
+                continue;
+            }
+            if (line.startsWith('Text Label ')) {
+                const header = line.split(/\s+/);
+                const x = Number(header[2] ?? 0);
+                const y = Number(header[3] ?? 0);
+                const orientation = Number(header[4] ?? 0);
+                const text = (lines[index + 1] ?? '').trim();
+                if (text) {
+                    labels.push({
+                        id: `label_${index}`,
+                        text,
+                        name: text,
+                        position: new Vector2D(x, y),
+                        rotation: this.orientationToRotation(orientation),
+                        netId: text,
+                    });
+                    index += 1;
+                }
+                continue;
+            }
+            if (line === '$Comp') {
+                const block = [];
+                let end = index + 1;
+                while (end < lines.length && lines[end].trim() !== '$EndComp') {
+                    block.push(lines[end]);
+                    end++;
+                }
+                const parsed = this.parseComponentBlock(block, index);
+                if (parsed)
+                    components.push(parsed);
+                index = end;
+            }
+        }
+        const sheet = {
+            id: 'sheet1',
+            name: 'Sheet1',
+            components,
+            wires,
+            netLabels: labels,
+            powerPorts: [],
+            junctions: [],
+            buses: [],
+            busEntries: [],
+            hierarchicalSheets: [],
+            width: sheetWidth,
+            height: sheetHeight,
+        };
+        return {
+            id: `legacy_${title}`,
+            name: title,
+            title,
+            sheets: [sheet],
+        };
+    }
+    parseComponentBlock(block, seed) {
+        let librarySymbol = 'legacy:component';
+        let reference = `U${seed}`;
+        let value = '';
+        let x = 0;
+        let y = 0;
+        for (const raw of block) {
+            const line = raw.trim();
+            if (!line)
+                continue;
+            if (line.startsWith('L ')) {
+                const parts = line.split(/\s+/);
+                librarySymbol = parts[1] ?? librarySymbol;
+                reference = parts[2] ?? reference;
+                continue;
+            }
+            if (line.startsWith('P ')) {
+                const parts = line.split(/\s+/);
+                x = Number(parts[1] ?? x);
+                y = Number(parts[2] ?? y);
+                continue;
+            }
+            if (line.startsWith('F 0 ')) {
+                const parsedRef = this.extractQuoted(line);
+                if (parsedRef)
+                    reference = parsedRef;
+                continue;
+            }
+            if (line.startsWith('F 1 ')) {
+                const parsedValue = this.extractQuoted(line);
+                if (parsedValue)
+                    value = parsedValue;
+                continue;
+            }
+        }
+        return {
+            id: `${reference}_${seed}`,
+            componentId: librarySymbol,
+            symbolId: librarySymbol,
+            reference,
+            value,
+            position: new Vector2D(x, y),
+            rotation: 0,
+            mirrored: false,
+            pinNetMap: {},
+            symbol: { id: librarySymbol, name: librarySymbol, pins: [] },
+            properties: {
+                LegacySymbol: librarySymbol,
+            },
+        };
+    }
+    parseCoords(line, expectedCount) {
+        if (!line)
+            return null;
+        const numbers = line
+            .split(/\s+/)
+            .map((token) => Number(token))
+            .filter((value) => Number.isFinite(value));
+        if (numbers.length < expectedCount)
+            return null;
+        return numbers.slice(0, expectedCount);
+    }
+    extractQuoted(line) {
+        const match = line.match(/"([^"]*)"/);
+        return match ? match[1] : null;
+    }
+    orientationToRotation(orientation) {
+        switch (orientation) {
+            case 1:
+                return 90;
+            case 2:
+                return 180;
+            case 3:
+                return 270;
+            case 0:
+            default:
+                return 0;
+        }
+    }
+}
+/* ================================================================== */
 /*  KiCad PCB Parser (.kicad_pcb)                                      */
 /* ================================================================== */
 /**

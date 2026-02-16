@@ -5,6 +5,7 @@ interface Tab {
   id: string;
   label: string;
   icon?: ReactNode;
+  tooltip?: string;
 }
 
 interface TabsProps {
@@ -32,6 +33,8 @@ export const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, style 
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
+            title={tab.tooltip ?? tab.label}
+            aria-label={tab.tooltip ?? tab.label}
             style={{
               display: 'flex',
               alignItems: 'center',

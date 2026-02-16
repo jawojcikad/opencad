@@ -5,38 +5,38 @@ import * as THREE from 'three';
  * Adds ambient, directional key/fill lights, and a hemisphere light.
  */
 export function setupLighting(scene: THREE.Scene): void {
-  // Ambient light — soft overall illumination
-  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  // Ambient light — strong base for even visibility across board surface
+  const ambient = new THREE.AmbientLight(0xffffff, 0.9);
   ambient.name = 'ambientLight';
   scene.add(ambient);
 
-  // Key light — main directional (from upper-right-front)
-  const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  keyLight.name = 'keyLight';
-  keyLight.position.set(100, 200, 150);
-  keyLight.castShadow = true;
-  keyLight.shadow.mapSize.width = 2048;
-  keyLight.shadow.mapSize.height = 2048;
-  keyLight.shadow.camera.near = 1;
-  keyLight.shadow.camera.far = 500;
-  keyLight.shadow.camera.left = -100;
-  keyLight.shadow.camera.right = 100;
-  keyLight.shadow.camera.top = 100;
-  keyLight.shadow.camera.bottom = -100;
-  scene.add(keyLight);
-
-  // Fill light — softer directional from opposite side (lower-left-back)
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.35);
-  fillLight.name = 'fillLight';
-  fillLight.position.set(-80, 100, -100);
-  scene.add(fillLight);
-
-  // Hemisphere light — sky/ground colour gradient for realistic ambient
+  // Hemisphere light — broad sky/ground contribution to avoid dark faces
   const hemiLight = new THREE.HemisphereLight(
-    0xddeeff, // sky colour (pale blue-white)
-    0x0f0e0d, // ground colour (dark brown)
-    0.25,
+    0xffffff,
+    0xb8c0c8,
+    0.75,
   );
   hemiLight.name = 'hemisphereLight';
   scene.add(hemiLight);
+
+  // Key light — gentle front light
+  const keyLight = new THREE.DirectionalLight(0xffffff, 0.45);
+  keyLight.name = 'keyLight';
+  keyLight.position.set(120, -80, 160);
+  keyLight.castShadow = false;
+  scene.add(keyLight);
+
+  // Fill light from opposite side
+  const fillA = new THREE.DirectionalLight(0xffffff, 0.35);
+  fillA.name = 'fillLightA';
+  fillA.position.set(-140, 100, 130);
+  fillA.castShadow = false;
+  scene.add(fillA);
+
+  // Additional cross-fill for uniformity across large boards
+  const fillB = new THREE.DirectionalLight(0xffffff, 0.3);
+  fillB.name = 'fillLightB';
+  fillB.position.set(0, 180, 120);
+  fillB.castShadow = false;
+  scene.add(fillB);
 }

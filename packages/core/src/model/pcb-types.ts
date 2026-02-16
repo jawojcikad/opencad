@@ -1,5 +1,6 @@
 import { Vector2D } from '../math/vector2d';
 import { Identifiable, Named, Positioned, UUID } from './base';
+import { Net } from './net';
 
 // ─── Layers ────────────────────────────────────────────────
 
@@ -80,10 +81,18 @@ export interface Pad extends Identifiable {
   drill?: number;
   /** Layers this pad sits on. */
   layers: Layer[];
+  /** Optional primary layer alias used by some importers. */
+  layer?: Layer;
   /** Net assignment. */
   netId?: UUID;
+  /** Optional net alias used by some importers. */
+  net?: string;
   /** Round-rect corner ratio (0..1). */
   roundRectRatio?: number;
+  /** Optional width alias (same as size.x). */
+  width?: number;
+  /** Optional height alias (same as size.y). */
+  height?: number;
 }
 
 // ─── Footprint graphics ────────────────────────────────────
@@ -140,6 +149,26 @@ export interface Footprint extends Identifiable, Named, Positioned {
   model3d?: Model3DRef;
   /** Back-reference to the Component definition. */
   componentId?: UUID;
+  /** Optional reference designator used by imported runtime shapes. */
+  reference?: string;
+  /** Optional component value/designator (e.g. 10k, 100nF). */
+  value?: string;
+  /** Optional placed layer alias used by imported runtime shapes. */
+  layer?: Layer;
+  /** Optional footprint source name used by imported runtime shapes. */
+  footprintName?: string;
+  /** Optional simplified silkscreen primitives used by some importers. */
+  silkscreen?: Array<{
+    type: 'line' | 'arc' | 'circle' | 'text';
+    position?: Vector2D;
+    start?: Vector2D;
+    end?: Vector2D;
+    center?: Vector2D;
+    radius?: number;
+    text?: string;
+    size?: number;
+    layer?: Layer;
+  }>;
 }
 
 // ─── Tracks / vias ─────────────────────────────────────────
@@ -157,8 +186,12 @@ export interface Via extends Identifiable {
   position: Vector2D;
   /** Annular ring diameter (nm). */
   diameter: number;
+  /** Optional size alias used by runtime import shapes. */
+  size?: number;
   /** Drill diameter (nm). */
   drill: number;
+  /** Optional drill alias used by runtime import shapes. */
+  drillDiameter?: number;
   /** Layer pair this via connects. */
   layers: [Layer, Layer];
   netId?: UUID;
@@ -182,8 +215,14 @@ export interface CopperZoneFillSettings {
 export interface CopperZone extends Identifiable {
   /** Outline polygon vertices. */
   polygon: Vector2D[];
+  /** Optional outline alias used by some importers. */
+  outline?: Vector2D[];
+  /** Optional filled-polygon alias for pre-filled zone geometry. */
+  filledPolygon?: Vector2D[];
   layer: Layer;
   netId?: UUID;
+  /** Optional net alias used by importers. */
+  net?: string;
   fillSettings: CopperZoneFillSettings;
 }
 
@@ -191,7 +230,11 @@ export interface CopperZone extends Identifiable {
 
 export interface BoardOutline {
   /** Closed polygon defining the board edge (on EdgeCuts layer). */
-  polygon: Vector2D[];
+  polygon?: Vector2D[];
+  /** Optional points alias used by runtime renderers. */
+  points?: Vector2D[];
+  /** Optional vertices alias from legacy parser outputs. */
+  vertices?: Vector2D[];
 }
 
 // ─── Design rule (layer-stack aware) ───────────────────────
@@ -210,8 +253,12 @@ export interface PCBDocument extends Identifiable, Named {
   tracks: Track[];
   vias: Via[];
   zones: CopperZone[];
+  /** Optional alias used by runtime consumers. */
+  copperZones?: CopperZone[];
   boardOutline: BoardOutline;
-  layerStack: LayerStackEntry[];
+  layerStack?: LayerStackEntry[];
   /** Design rules are stored in a separate structure. */
-  designRulesId: UUID;
+  designRulesId?: UUID;
+  /** Optional net list used by interactive routing and ratsnest. */
+  nets?: Net[];
 }

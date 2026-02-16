@@ -3,6 +3,8 @@ import { Identifiable, Named, UUID } from './base';
 export interface Net extends Identifiable, Named {
   /** Optional reference to a NetClass. */
   classId?: UUID;
+  /** Optional connected pin list used by PCB import pipelines. */
+  pins?: Array<{ refDes: string; pin: string }>;
 }
 
 export interface NetClass extends Identifiable, Named {

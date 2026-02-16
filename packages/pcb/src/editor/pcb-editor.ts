@@ -14,6 +14,7 @@ import {
   DesignRules,
   defaultDesignRules,
   Net,
+  normalizePCBDocument,
 } from '@opencad/core';
 import {
   WebGLRenderer,
@@ -60,6 +61,7 @@ export class PCBEditor {
   private ratsnestLines: RatsnestLine[] = [];
   private ratsnestCalculator: RatsnestCalculator;
   private gridSettings: GridSettings;
+  private needsRender = true;
 
   private boundOnMouseDown: (e: MouseEvent) => void;
   private boundOnMouseMove: (e: MouseEvent) => void;
@@ -101,7 +103,7 @@ export class PCBEditor {
       tracks: [],
       vias: [],
       copperZones: [],
-      boardOutline: { points: [] },
+      boardOutline: { polygon: [], points: [] },
       nets: [],
     };
 
@@ -122,6 +124,7 @@ export class PCBEditor {
 
   resize(_width: number, _height: number): void {
     this.renderer.resize();
+    this.requestRender();
   }
 
   // ─── Document Management ────────────────────────────────────
@@ -134,13 +137,14 @@ export class PCBEditor {
       tracks: [],
       vias: [],
       copperZones: [],
-      boardOutline: { points: [] },
+      boardOutline: { polygon: [], points: [] },
       nets: [],
     };
     this.selection.clear();
     this.commandHistory = new CommandHistory();
     this.ratsnestLines = [];
     this.eventBus.emit('pcb:document-changed', { document: this.document });
+    this.requestRender();
   }
 
   getDocument(): PCBDocument {
@@ -156,69 +160,7 @@ export class PCBEditor {
       throw new Error('Cannot load a null or undefined document');
     }
 
-    const toPoint = (p: any): Vector2D => {
-      if (p instanceof Vector2D) return p;
-      return new Vector2D(Number(p?.x ?? 0), Number(p?.y ?? 0));
-    };
-
-    const normalizedFootprints = (doc.footprints ?? []).map((fp: any) => ({
-      ...fp,
-      position: toPoint(fp.position),
-      rotation: Number(fp.rotation ?? 0),
-      reference: fp.reference ?? fp.name ?? '',
-      layer: fp.layer ?? fp.layers?.[0] ?? 'F.Cu',
-      pads: (fp.pads ?? []).map((pad: any) => ({
-        ...pad,
-        position: toPoint(pad.position),
-        width: Number(pad.width ?? pad.size?.x ?? 1),
-        height: Number(pad.height ?? pad.size?.y ?? 1),
-        layer: pad.layer ?? pad.layers?.[0] ?? fp.layer ?? 'F.Cu',
-        shape: pad.shape ?? 'rect',
-      })),
-      silkscreen: fp.silkscreen ?? [],
-    }));
-
-    const normalizedTracks = (doc.tracks ?? []).map((track: any) => ({
-      ...track,
-      start: toPoint(track.start),
-      end: toPoint(track.end),
-      width: Number(track.width ?? 0.2),
-    }));
-
-    const normalizedVias = (doc.vias ?? []).map((via: any) => ({
-      ...via,
-      position: toPoint(via.position),
-      diameter: Number(via.diameter ?? via.size ?? 0.8),
-      drill: Number(via.drill ?? via.drillDiameter ?? 0.4),
-    }));
-
-    const normalizedOutlinePoints = (
-      doc.boardOutline?.points ??
-      doc.boardOutline?.polygon ??
-      doc.boardOutline?.vertices ??
-      []
-    )
-      .map((p: any) => toPoint(p));
-
-    const normalizedZones = (doc.copperZones ?? doc.zones ?? []).map((zone: any) => ({
-      ...zone,
-      polygon: (zone.polygon ?? zone.outline ?? []).map((p: any) => toPoint(p)),
-    }));
-
-    const normalizedNets = (doc.nets ?? []).map((net: any) => ({
-      ...net,
-      pins: net.pins ?? [],
-    }));
-
-    this.document = {
-      ...doc,
-      footprints: normalizedFootprints,
-      tracks: normalizedTracks,
-      vias: normalizedVias,
-      copperZones: normalizedZones,
-      boardOutline: { points: normalizedOutlinePoints },
-      nets: normalizedNets,
-    };
+    this.document = normalizePCBDocument(doc);
 
     // Reset editor state
     this.selection.clear();
@@ -226,13 +168,14 @@ export class PCBEditor {
     this.ratsnestLines = [];
 
     // Recalculate ratsnest if the document has nets
-    if (this.document.nets.length > 0) {
+    if ((this.document.nets ?? []).length > 0) {
       this.updateRatsnest();
     }
 
     this.fitViewToDocument();
 
     this.eventBus.emit('pcb:document-changed', { document: this.document });
+    this.requestRender();
   }
 
   private fitViewToDocument(): void {
@@ -379,6 +322,13 @@ export class PCBEditor {
   setActiveLayer(layer: Layer): void {
     this.activeLayer = layer;
     this.eventBus.emit('pcb:layer-changed', { layer });
+    this.requestRender();
+  }
+
+  setLayerVisibility(layer: Layer, visible: boolean): void {
+    this.layerManager.setVisible(layer as string, visible);
+    this.eventBus.emit('pcb:layer-visibility-changed', { layer, visible });
+    this.requestRender();
   }
 
   getActiveLayer(): Layer {
@@ -399,6 +349,7 @@ export class PCBEditor {
     this.canvas.style.cursor = tool.cursor;
     tool.onActivate(this);
     this.eventBus.emit('pcb:tool-changed', { tool: tool.name });
+    this.requestRender();
   }
 
   // ─── Selection ─────────────────────────────────────────────
@@ -414,11 +365,13 @@ export class PCBEditor {
     this.eventBus.emit('pcb:selection-changed', {
       selection: Array.from(this.selection),
     });
+    this.requestRender();
   }
 
   clearSelection(): void {
     this.selection.clear();
     this.eventBus.emit('pcb:selection-changed', { selection: [] });
+    this.requestRender();
   }
 
   deleteSelection(): void {
@@ -430,6 +383,7 @@ export class PCBEditor {
     this.selection.clear();
     this.updateRatsnest();
     this.eventBus.emit('pcb:selection-changed', { selection: [] });
+    this.requestRender();
   }
 
   // ─── Command Execution ────────────────────────────────────
@@ -437,6 +391,7 @@ export class PCBEditor {
   executeCommand(cmd: Command): void {
     this.commandHistory.execute(cmd);
     this.eventBus.emit('pcb:document-modified', { command: cmd.description });
+    this.requestRender();
   }
 
   // ─── Undo/Redo ─────────────────────────────────────────────
@@ -445,12 +400,14 @@ export class PCBEditor {
     this.commandHistory.undo();
     this.updateRatsnest();
     this.eventBus.emit('pcb:undo', {});
+    this.requestRender();
   }
 
   redo(): void {
     this.commandHistory.redo();
     this.updateRatsnest();
     this.eventBus.emit('pcb:redo', {});
+    this.requestRender();
   }
 
   // ─── Design Rules ──────────────────────────────────────────
@@ -461,6 +418,7 @@ export class PCBEditor {
 
   setDesignRules(rules: DesignRules): void {
     this.designRules = { ...rules };
+    this.requestRender();
   }
 
   // ─── Grid Settings ─────────────────────────────────────────
@@ -511,11 +469,14 @@ export class PCBEditor {
     }
 
     this.renderer.flush();
+    this.needsRender = false;
   }
 
   startRenderLoop(): void {
     const loop = () => {
-      this.render();
+      if (this.needsRender || this.camera.isPanning()) {
+        this.render();
+      }
       this.animationFrameId = requestAnimationFrame(loop);
     };
     this.animationFrameId = requestAnimationFrame(loop);
@@ -535,6 +496,7 @@ export class PCBEditor {
     this.eventBus.emit('pcb:ratsnest-updated', {
       lineCount: this.ratsnestLines.length,
     });
+    this.requestRender();
   }
 
   // ─── Hit Testing ──────────────────────────────────────────
@@ -679,6 +641,7 @@ export class PCBEditor {
 
     if (this.activeTool) {
       this.activeTool.onMouseDown(worldPos, e);
+      this.requestRender();
     }
   }
 
@@ -687,11 +650,13 @@ export class PCBEditor {
 
     if (this.camera.isPanning()) {
       this.camera.updatePan(e.clientX, e.clientY);
+      this.requestRender();
       return;
     }
 
     if (this.activeTool) {
       this.activeTool.onMouseMove(worldPos, e);
+      this.requestRender();
     }
   }
 
@@ -700,11 +665,13 @@ export class PCBEditor {
 
     if (e.button === 1) {
       this.camera.endPan();
+      this.requestRender();
       return;
     }
 
     if (this.activeTool) {
       this.activeTool.onMouseUp(worldPos, e);
+      this.requestRender();
     }
   }
 
@@ -715,6 +682,7 @@ export class PCBEditor {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     this.camera.zoomAt(x, y, zoomFactor);
+    this.requestRender();
   }
 
   onKeyDown(e: KeyboardEvent): void {
@@ -772,6 +740,7 @@ export class PCBEditor {
   // ─── Private Rendering Methods ────────────────────────────
 
   private renderBoardOutline(): void {
+    if (!this.layerManager.isLayerVisible('Edge.Cuts')) return;
     if (!this.document.boardOutline?.points?.length) return;
 
     const pts = this.document.boardOutline.points;
@@ -794,6 +763,9 @@ export class PCBEditor {
   }
 
   private renderVias(): void {
+    if (!this.layerManager.isLayerVisible('F.Cu') && !this.layerManager.isLayerVisible('B.Cu')) {
+      return;
+    }
     for (const via of this.document.vias) {
       // Outer annular ring
       this.renderer.drawCircle(via.position, via.diameter / 2, {
@@ -868,6 +840,12 @@ export class PCBEditor {
 
       // Draw reference designator
       if (fp.reference) {
+        const fpLayer = fp.layer ?? ('F.Cu' as Layer);
+        const refLayer = (fpLayer as string) === 'B.Cu' ? ('B.SilkS' as Layer) : ('F.SilkS' as Layer);
+        if (!this.layerManager.isLayerVisible(refLayer)) {
+          continue;
+        }
+
         const refPos: Vector2D = {
           x: fp.position.x,
           y: fp.position.y - 2.0,
@@ -882,7 +860,7 @@ export class PCBEditor {
   }
 
   private renderCopperZones(): void {
-    for (const zone of this.document.copperZones) {
+    for (const zone of this.document.copperZones ?? []) {
       if (!this.layerManager.isLayerVisible(zone.layer)) continue;
       if (!zone.polygon || zone.polygon.length < 3) continue;
 
@@ -898,6 +876,9 @@ export class PCBEditor {
   }
 
   private renderRatsnest(): void {
+    if (!this.layerManager.isLayerVisible('F.Cu') && !this.layerManager.isLayerVisible('B.Cu')) {
+      return;
+    }
     const color = { r: 0.3, g: 0.3, b: 1.0, a: 0.5 };
     for (const line of this.ratsnestLines) {
       this.renderer.drawLine(line.start, line.end, 0.05, color);
@@ -1003,6 +984,10 @@ export class PCBEditor {
       default:
         return { r: 0.5, g: 0.5, b: 0.5, a: 0.7 };
     }
+  }
+
+  private requestRender(): void {
+    this.needsRender = true;
   }
 }
 
